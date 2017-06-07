@@ -1,6 +1,10 @@
 from neopixel import NeoPixel
 from random import randint
 from microbit import *
+import radio
+
+radio.on()
+radio.config(channel=28)
 
 class Display:
   def __init__(self):
@@ -49,8 +53,12 @@ class Game:
 
   def explode(self, d):
     c = [[255, 0, 0], [244, 173, 66], [243, 241, 60]]
-    for i in range(40):
-      d.pixel(self.x + randint(-3, 3), self.y + randint(-3, 3), c[i%3][0], c[i%3][1], c[i%3][2])
+    for i in range(20):
+      d.pixel(self.x + randint(-2, 2), self.y + randint(-2, 2), c[i%3][0], c[i%3][1], c[i%3][2])
+      sleep(20)
+      d.draw()
+    for i in range(20):
+      d.pixel(self.x + randint(-4, 4), self.y + randint(-4, 4), c[i%3][0], c[i%3][1], c[i%3][2])
       sleep(20)
       d.draw()
     self.x = 0
@@ -96,9 +104,16 @@ class Game:
 
     self.t += 1
 
-    if button_a.was_pressed():
+    m = None
+    try:
+      m = radio.receive()
+    except:
+      m = None
+      radio.off()
+      radio.on()
+    if button_a.was_pressed() or m == 'a':
       self.y = max(0, self.y - 1)
-    if button_b.was_pressed():
+    if button_b.was_pressed() or m == 'b':
       self.y = min(5, self.y + 1)
 
 g = Game()
