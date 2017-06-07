@@ -4,7 +4,7 @@ import radio
 radio.on()
 radio.config(channel=28)
 
-display.show(Image.BUTTERFLY)
+display.show(Image.BUTTERFLY * 0.2)
 
 while True:
   try:
