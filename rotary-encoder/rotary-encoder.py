@@ -19,11 +19,23 @@ class Encoder:
     pin_a.set_pull(pin_a.PULL_UP)
 
   def read_rotor(self):
+    """When the rotor is turned, SIG A is pulsed. If B is also high, then we are
+    turning clockwise. Otherwise, we are turning anti-clockwise.
+
+    Right now we return a number that loops over 0 to 9. TODO: make configurable.
+
+    Returns:
+      x - a number that goes up if clockwise, down if anti-clockwise, in a
+      circular ring from 0 to 9
+    """
     self.sig_a = self.pin_a.read_digital()
     self.sig_b = self.pin_b.read_digital()
+    # catch the rising edge of A
     if self.sig_a and not self.old_sig_a:
+      # if b is also high, clockwise
       if self.sig_b:
         self.x += 1
+
       else:
         self.x -= 1
     if self.x > 9:
