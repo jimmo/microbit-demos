@@ -1,66 +1,67 @@
 from microbit import *
 import time
 
-#Array of states of the LEDs
-states = []
-for i in range(10):
-    states.append(0x0000)
+class LEDBar:
+  def __init__(self, data, clk):
+    self.data_pin = data
+    self.clk_pin = clk
+    self.values = []
+    for i in range(10):
+      self.values.append(0x0000)
 
-def latch():
-    pin0.write_digital(0)
+  def latch(self):
+    self.clk_pin.write_digital(0)
+    self.data_pin.write_digital(0)
     time.sleep_us(500)
     for i in range(4):
-        pin0.write_digital(1)
-        pin0.write_digital(0)
+      self.data_pin.write_digital(1)
+      self.data_pin.write_digital(0)
 
-
-def send_data(data):
+  def send_data(self, data):
     clk = 0
-    for i in range(16):
-        pin0.write_digital((data & 0x8000) >> 15)
-        clk = 1-clk
-        pin13.write_digital(clk)
-        data <<= 1
-        
 
+    # write MSB as 8 zeros
+    for i in range(8):
+      self.data_pin.write_digital(0)
+      clk = 1 - clk
+      self.clk_pin.write_digital(clk)
 
-def set_data(states):
-    #This sets the configuration data
-    send_data(0x0000)
-    #This sets the state of each LED (i.e. the brightness)
+    # write data
+    for i in range(8):
+      self.data_pin.write_digital((data & 0x80) >> 7)
+      clk = 1 - clk
+      self.clk_pin.write_digital(clk)
+      data = data << 1
+
+  def update(self):
+    # send configuration
+    self.send_data(0x0000)
+
+    # send each LED
     for i in range(10):
-        send_data(states[i])
-    #This is empty bits for the two unconnected LEDs
-    send_data(0x0000)
-    send_data(0x0000)
-    
-    latch()
+      self.send_data(self.values[i])
 
-growing = True
-wait = True
-state = 0
+    # send for two unconnected LEDs
+    self.send_data(0x0000)
+    self.send_data(0x0000)
+    self.latch()
+
+  def set_led(self, led, value):
+    brightness = 2**value - 1
+    if brightness < 0:
+      brightness = 0
+    if brightness > 255:
+      brightness = 255
+    self.values[led] = brightness
+
+
+bar = LEDBar(pin0, pin13)
 while True:
-    if button_a.was_pressed():
-        wait = False
-        growing = True
-    if button_b.was_pressed():
-        wait = False
-        growing = False
-    if growing == True and wait == False:
-        states[state] += 10000
-        if states[state] >= 0xFFFF:
-            state += 1
-        if state == 10:
-            state = 9
-            wait = True
-    elif growing == False and wait == False:
-        states[state] -= 10000
-        if states[state] <= 0x0000:
-            state -= 1
-        if state == -1:
-            state = 0
-            wait = True
-    set_data(states)
-        
-    
-    
+  for led in range(10):
+    for i in range(9):
+      bar.set_led(led, i)
+      bar.update()
+  for led in range(9, -1, -1):
+    for i in range(8, -1, -1):
+      bar.set_led(led, i)
+      bar.update()
