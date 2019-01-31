@@ -7,7 +7,7 @@ class LEDBar:
     self.clk_pin = clk
     self.values = []
     for i in range(10):
-      self.values.append(0x0000)
+      self.values.append(0)
 
   def latch(self):
     self.clk_pin.write_digital(0)
@@ -28,7 +28,7 @@ class LEDBar:
 
     # write data
     for i in range(8):
-      self.data_pin.write_digital((data & 0x80) >> 7)
+      self.data_pin.write_digital((data >> 7) & 1)
       clk = 1 - clk
       self.clk_pin.write_digital(clk)
       data = data << 1
@@ -38,22 +38,28 @@ class LEDBar:
     self.send_data(0x0000)
 
     # send each LED
-    for i in range(10):
-      self.send_data(self.values[i])
+    for v in self.values:
+      self.send_data(v)
 
     # send for two unconnected LEDs
-    self.send_data(0x0000)
-    self.send_data(0x0000)
+    self.send_data(0)
+    self.send_data(0)
     self.latch()
 
   def set_led(self, led, value):
+    if led > len(self.values) - 1:
+      return
     brightness = 2**value - 1
     if brightness < 0:
       brightness = 0
-    if brightness > 255:
+    elif brightness > 255:
       brightness = 255
     self.values[led] = brightness
 
+  def clear(self):
+    for led in range(10):
+      self.values[led] = 0
+    self.update()
 
 bar = LEDBar(pin0, pin13)
 while True:
